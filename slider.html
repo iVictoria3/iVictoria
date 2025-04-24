@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swiper Slider with Reflection</title>
+  <!-- Link Swiper's CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #000000;
+      font-family: Helvetica Neue, Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      color: #000;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+
+    .swiper-container {
+      width: 100%;
+      padding-top: 50px;
+      padding-bottom: 150px; /* Extra space for reflection */
+    }
+
+    .swiper-slide {
+      width: 320px;
+      height: 420px;
+      background-color: transparent;
+      perspective: 1000px;
+      position: relative;
+    }
+
+    .card-container {
+      position: relative;
+      height: 100%;
+      width: 100%;
+    }
+
+    .card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.8s;
+      transform-style: preserve-3d;
+      cursor: pointer;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .card-front {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .picture {
+      width: 100%;
+      height: 320px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .picture img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .detail {
+      padding: 20px;
+      font-weight: 600;
+      text-align: center;
+      position: relative;
+    }
+
+    .detail h3 {
+      margin: 0;
+      font-size: 20px;
+      color: #333;
+    }
+
+    .detail span {
+      display: block;
+      font-size: 16px;
+      color: #f44336;
+      margin-top: 5px;
+    }
+
+    .back-content {
+      text-align: center;
+    }
+
+    .back-content h3 {
+      color: #f44336;
+      margin-bottom: 15px;
+    }
+
+    .back-content p {
+      color: #333;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+
+    /* Reflection Effect */
+    .reflection {
+      position: absolute;
+      bottom: -120px;
+      left: 0;
+      width: 100%;
+      height: 100px;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
+      transform: scaleY(-1);
+      opacity: 0.5;
+      mask-image: linear-gradient(to bottom, transparent 0%, black 50%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 50%);
+      z-index: -1;
+      border-radius: 8px;
+    }
+
+    .reflection img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.7;
+    }
+
+    /* For WebKit browsers */
+    @supports (-webkit-backdrop-filter: blur(10px)) {
+      .reflection {
+        -webkit-backdrop-filter: blur(5px);
+        backdrop-filter: blur(5px);
+      }
+    }
+
+    /* Maximize button styles */
+    .maximize-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.5);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      transition: all 0.3s ease;
+      opacity: 0;
+    }
+
+    .picture:hover .maximize-btn {
+      opacity: 1;
+    }
+
+    .maximize-btn:hover {
+      background: rgba(0, 0, 0, 0.8);
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    /* Modal styles for expanded view */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      max-width: 90%;
+      max-height: 90%;
+      position: relative;
+    }
+
+    .modal-content img {
+      max-width: 100%;
+      max-height: 90vh;
+      object-fit: contain;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: white;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .modal-title {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      color: white;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.7);
+    }
+  </style>
+</head>
+<body>
+  <!-- Slider main container -->
+  <div class="swiper-container">
+    <!-- Additional required wrapper -->
+    <div class="swiper-wrapper">
+      <!-- Slides -->
+      <div class="swiper-slide">
+        <div class="card-container">
+          <div class="card">
+            <div class="card-face card-front">
+              <div class="picture">
+                <img src="img/sshiftlyproto.png" alt="Shiftly">
+                <button class="maximize-btn" data-img="img/sshiftlyproto.png" data-title="Shiftly - Human Resources Platform">
+                  <i class="fas fa-expand"></i>
+                </button>
+              </div>
+              <div class="detail">
+                <h3>Shiftly</h3>
+                <span>Human Resources Platform</span>
+              </div>
+            </div>
+            <div class="card-face card-back">
+              <div class="back-content">
+                <h3>Shiftly Details</h3>
+                <p>Comprehensive HR platform for workforce management, scheduling, and employee engagement.</p>
+                <p>Features include shift swapping, time tracking, and analytics.</p>
+              </div>
+            </div>
+          </div>
+          <div class="reflection">
+            <img src="img/sshiftlyproto.png" alt="">
+          </div>
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="card-container">
+          <div class="card">
+            <div class="card-face card-front">
+              <div class="picture">
+                <img src="img/tantumc.png" alt="Tantum">
+                <button class="maximize-btn" data-img="img/tantumc.png" data-title="Tantum - Access Management Platform">
+                  <i class="fas fa-expand"></i>
+                </button>
+              </div>
+              <div class="detail">
+                <h3>Tantum</h3>
+                <span>Access Management Platform</span>
+              </div>
+            </div>
+            <div class="card-face card-back">
+              <div class="back-content">
+                <h3>Tantum Details</h3>
+                <p>Enterprise access control with role-based permissions and audit trails.</p>
+                <p>Automated user account provisioning and deprovisioning.</p>
+              </div>
+            </div>
+          </div>
+          <div class="reflection">
+            <img src="img/tantumc.png" alt="">
+          </div>
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="card-container">
+          <div class="card">
+            <div class="card-face card-front">
+              <div class="picture">
+                <img src="img/REDI.PNG" alt="REDI">
+                <button class="maximize-btn" data-img="img/REDI.PNG" data-title="REDI - Disciplinary Report Toolset">
+                  <i class="fas fa-expand"></i>
+                </button>
+              </div>
+              <div class="detail">
+                <h3>REDI</h3>
+                <span>Disciplinary Report Toolset</span>
+              </div>
+            </div>
+            <div class="card-face card-back">
+              <div class="back-content">
+                <h3>REDI Details</h3>
+                <p>Standardized incident reporting with workflow automation.</p>
+                <p>Includes documentation templates and escalation paths.</p>
+              </div>
+            </div>
+          </div>
+          <div class="reflection">
+            <img src="img/REDI.PNG" alt="">
+          </div>
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="card-container">
+          <div class="card">
+            <div class="card-face card-front">
+              <div class="picture">
+                <img src="img/RHTIEMPOS.PNG" alt="RH Tiempos">
+                <button class="maximize-btn" data-img="img/RHTIEMPOS.PNG" data-title="RH Tiempos - HR Time management toolset">
+                  <i class="fas fa-expand"></i>
+                </button>
+              </div>
+              <div class="detail">
+                <h3>RH Tiempos</h3>
+                <span>HR Time management toolset</span>
+              </div>
+            </div>
+            <div class="card-face card-back">
+              <div class="back-content">
+                <h3>RH Tiempos Details</h3>
+                <p>Time and attendance solution with biometric integration.</p>
+                <p>Features overtime calculation and leave management.</p>
+              </div>
+            </div>
+          </div>
+          <div class="reflection">
+            <img src="img/RHTIEMPOS.PNG" alt="">
+          </div>
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="card-container">
+          <div class="card">
+            <div class="card-face card-front">
+              <div class="picture">
+                <img src="img/KIOSK.jpg" alt="HR Kiosks">
+                <button class="maximize-btn" data-img="img/KIOSK.jpg" data-title="HR Kiosks - HR Self-service Kiosks">
+                  <i class="fas fa-expand"></i>
+                </button>
+              </div>
+              <div class="detail">
+                <h3>HR Kiosks</h3>
+                <span>HR Self-service Kiosks</span>
+              </div>
+            </div>
+            <div class="card-face card-back">
+              <div class="back-content">
+                <h3>HR Kiosks Details</h3>
+                <p>Touch-screen solution for employee self-service functions.</p>
+                <p>Includes benefits enrollment and policy acknowledgments.</p>
+              </div>
+            </div>
+          </div>
+          <div class="reflection">
+            <img src="img/KIOSK.jpg" alt="">
+          </div>
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="card-container">
+          <div class="card">
+            <div class="card-face card-front">
+              <div class="picture">
+                <img src="img/DORI.png" alt="DORI">
+                <button class="maximize-btn" data-img="img/DORI.png" data-title="DORI - Security Incident Documentation">
+                  <i class="fas fa-expand"></i>
+                </button>
+              </div>
+              <div class="detail">
+                <h3>DORI</h3>
+                <span>Security Incident Documentation</span>
+              </div>
+            </div>
+            <div class="card-face card-back">
+              <div class="back-content">
+                <h3>DORI Details</h3>
+                <p>Complete security incident documentation system.</p>
+                <p>Includes regulatory compliance reporting.</p>
+              </div>
+            </div>
+          </div>
+          <div class="reflection">
+            <img src="img/DORI.png" alt="">
+          </div>
+        </div>
+      </div>
+     
+      <div class="swiper-slide">
+        <div class="card-container">
+          <div class="card">
+            <div class="card-face card-front">
+              <div class="picture">
+                <img src="img/PowerBI.jpg" alt="Travel and Expenses">
+                <button class="maximize-btn" data-img="img/PowerBI.jpg" data-title="Data Analytics & PowerBI Dashboards - Expense Management System">
+                  <i class="fas fa-expand"></i>
+                </button>
+              </div>
+              <div class="detail">
+                <h3>Data Analytics & PowerBI Dashboards</h3>
+                <span>Expense Management System</span>
+              </div>
+            </div>
+            <div class="card-face card-back">
+              <div class="back-content">
+                <h3>Travel & Expenses Details</h3>
+                <p>Comprehensive travel and expense management.</p>
+                <p>Automated approval workflows and reporting.</p>
+              </div>
+            </div>
+          </div>
+          <div class="reflection">
+            <img src="img/inventory.jpg" alt="">
+          </div>
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="card-container">
+          <div class="card">
+            <div class="card-face card-front">
+              <div class="picture">
+                <img src="img/inventory.jpg" alt="Annual Inventory">
+                <button class="maximize-btn" data-img="img/inventory.jpg" data-title="Annual Inventory - Inventory Management System">
+                  <i class="fas fa-expand"></i>
+                </button>
+              </div>
+              <div class="detail">
+                <h3>Annual Inventory</h3>
+                <span>Inventory Management System</span>
+              </div>
+            </div>
+            <div class="card-face card-back">
+              <div class="back-content">
+                <h3>Annual Inventory Details</h3>
+                <p>System to control annual inventory process.</p>
+                <p>Barcode scanning and reporting features.</p>
+              </div>
+            </div>
+          </div>
+          <div class="reflection">
+            <img src="https://images.unsplash.com/photo-1500080209535-717dd4ebaa6b?ixlib=rb-0.3.5&ixid=eyJhcHBfaWQiOjEyMDd9&s=ddee81e2e574e8190b07139ddb0f1938&auto=format&fit=crop&w=687&q=80" alt="">
+          </div>
+        </div>
+      </div>
+      <div class="swiper-slide">
+        <div class="card-container">
+          <div class="card">
+            <div class="card-face card-front">
+              <div class="picture">
+                <img src="img/100.png" alt="RACK PF">
+                <button class="maximize-btn" data-img="img/100.png" data-title="RACK PF - Warehouse Tracking System">
+                  <i class="fas fa-expand"></i>
+                </button>
+              </div>
+              <div class="detail">
+                <h3>+100 Different applications created</h3>
+                <span>Warehouse Tracking System</span>
+              </div>
+            </div>
+            <div class="card-face card-back">
+              <div class="back-content">
+                <h3>+100 Different applications created</h3>
+                <p>I've created more than 100 applications in my career, oriented to manufacturing, HR, Medical services, Logistics, Security, Corporate solutions, and more.</p>
+                <p>Real-time inventory management solution.</p>
+              </div>
+            </div>
+          </div>
+          <div class="reflection">
+            <img src="img/PowerBI.jpg" alt="">
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- If we need pagination -->
+    <div class="swiper-pagination"></div>
+  </div>
+
+  <!-- Modal for expanded image -->
+  <div id="imageModal" class="modal">
+    <span class="close-modal">&times;</span>
+    <div class="modal-content">
+      <img id="expandedImage" src="" alt="">
+    </div>
+    <div class="modal-title" id="modalTitle"></div>
+  </div>
+
+  <!-- Swiper JS -->
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+  
+  <!-- Initialize Swiper -->
+  <script>
+    var swiper = new Swiper(".swiper-container", {
+      effect: "coverflow",
+      grabCursor: true,
+      centeredSlides: true,
+      slidesPerView: "auto",
+      coverflowEffect: {
+        rotate: 20,
+        stretch: 0,
+        depth: 350,
+        modifier: 1,
+        slideShadows: true
+      },
+      pagination: {
+        el: ".swiper-pagination",
+        clickable: true
+      }
+    });
+
+    // Add click event to cards
+    document.querySelectorAll('.card').forEach(card => {
+      card.addEventListener('click', function(e) {
+        // Don't flip if maximize button was clicked
+        if (!e.target.closest('.maximize-btn')) {
+          this.classList.toggle('flipped');
+          
+          // Pause swiper during interaction
+          swiper.mousewheel.disable();
+          swiper.keyboard.disable();
+          
+          if (!this.classList.contains('flipped')) {
+            setTimeout(() => {
+              swiper.mousewheel.enable();
+              swiper.keyboard.enable();
+            }, 800);
+          }
+        }
+      });
+    });
+
+    // Modal functionality
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('expandedImage');
+    const modalTitle = document.getElementById('modalTitle');
+    const closeModal = document.querySelector('.close-modal');
+
+    document.querySelectorAll('.maximize-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation(); // Prevent card flip
+        modal.style.display = 'flex';
+        modalImg.src = this.getAttribute('data-img');
+        modalTitle.textContent = this.getAttribute('data-title');
+      });
+    });
+
+    closeModal.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    // Close modal when clicking outside the image
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
